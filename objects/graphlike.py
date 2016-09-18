@@ -75,4 +75,23 @@ class Graphlike(object):
         0, while weighted_graphs can.'''
         pass
     
+    @abstractmethod
+    def is_edge(self, v1, v2):
+        """Returns true if v1, v2 is an edge."""
+        pass
     
+    @abstractmethod
+    def is_an_edge(self, v1, *vertices):
+        """Returns the first edge encountered from v1 to any of the vertices,
+        but if not, returns False."""
+        pass
+    
+    @abstractmethod
+    def adjacent(self, vertex):
+        """Returns a collection of vertices that are adjacent to vertex."""
+        pass
+    
+    @abstractmethod
+    def other_vertices(self, *vertices):
+        """Returns the collection of other vertices, distinct from vertex."""
+        pass
