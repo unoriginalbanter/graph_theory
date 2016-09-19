@@ -31,14 +31,10 @@ Weight-Spanning Trees from weighted connected graphs), while allowing for a
 clear structure of properties of each of the various kinds of graphlike objects 
 of interest. 
 
-
-Duck-typing the algorithms saves on total lines of code by a considerable
-amount, though deficiencies would seem to arise in large scale projects, 
-where multiple modules interact in complex ways, or where any one developer
-may not be able to "fully understand" each module of code, each variable
-name as called. However, Python is a language known to be very "fast" to develop
-in compared to many other languages, and duck typing in Python is often
-considered good style for many applications, which is attempted here.
+Also, for those programmers who wish to implement graph theory solutions to
+certain applicable technical issues, and yet who do not have a background in
+mathematics, this structure allows for better intuitive understanding of the
+object inheritance Trees, pun intended.
 
 See: [PEP 3119 -- Introducing Abscract Base Classes](https://www.python.org/dev/peps/pep3119/)
 
@@ -47,6 +43,7 @@ See: [PEP 3119 -- Introducing Abscract Base Classes](https://www.python.org/dev/
 Since the project is in development, usage is still very limited. However,
 creation of Graphs, Digraphs, and their weighted counterparts are still
 callable and creatable. For example, importing graph.py, we can create the
-complete graph of order 3 by hard-code, 
+complete graph of order 3 by hard-code,
 
-> 
+>import graphlike_connectivity as graphlike
+>k3 = graphlike.complete_graph(3)
