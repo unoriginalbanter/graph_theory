@@ -46,4 +46,5 @@ callable and creatable. For example, importing graph.py, we can create the
 complete graph of order 3 by hard-code,
 
 >import graphlike_connectivity as graphlike
+
 >k3 = graphlike.complete_graph(3)
