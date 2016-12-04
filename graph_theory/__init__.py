@@ -16,3 +16,5 @@ __all__ = [
     "graphlike_connectivity",
     "stable_marriages",
     ]
+
+version = '0.0.3'

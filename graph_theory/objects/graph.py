@@ -1,4 +1,4 @@
-'''
+"""
 Created on Apr 13, 2016
 
 @author: unoriginalbanter
@@ -16,66 +16,106 @@ We'll note that we distinguish graphs from digraphs in that
 a graph is any digraph where for any edge in the graph, [v1, v2], 
 we have [v2, v1] also an edge. We'll denote this in Python by having our
 edges each be sets instead of lists.
-'''
+"""
 import math
 
-from . import digraph
+from graph_theory.objects import digraph
+
 
 class Graph(digraph.Digraph):
-    '''
+    """
     Main properties:
-        vertices The nodes of a graph
-        edges The edges between vertices, a collection of pairs (in this case,
-                a set of 2-sets whose entries are vertices)
-        adj (Adjacency matrix), a dict whose keys are list-pairs of vertices
-                and whose values are 1, or None if no edge is present;
-                employs the dictionary representation of a matrix
-    '''
-
-
-    def __init__(self, verts=[], edges=[], ad_m={}):
-        '''
+        vertices: The nodes of a graph
+        edges: The edges between vertices, a collection of pairs (in this case, a set of 2-sets whose entries are
+            vertices)
+        Adjacency matrix: a two-degree list whose keys are list-pairs of vertices and whose values are 1, or None if no
+            edge is present; employs the dictionary representation of a matrix
+    """
+    def __init__(self, vertices=None, edges=None, adjacency_matrix=None):
+        """
         Constructor
-        '''
-        self.vertices=self.set_vertices(verts)
-        self.edges=self.set_edges(edges)
-        self.adj=ad_m
-        
-            
-    def get_vertices(self):
-        return self.vertices
-    
-    def set_vertices(self, vertices):
-        self.vertices=set(vertices)
-        
-    property(get_vertices, set_vertices)
-    
-    def get_edges(self):
-        return self.edges
-    
-    def set_edges(self, edges):
-        self.edges=set(edges)
-        
-    property(get_edges, set_edges)
-    
-    def set_adj(self, adj):
-        self.adj = adj
-        
-    def get_adj(self):
-        return self.adj
+        :param vertices: Collection of vertices
+        :type vertices: set
+        :param edges: Collection of edges
+        :type edges: set(set)
+        :param adjacency_matrix: Adjacency matrix
+        :type adjacency_matrix: list(list)
+        """
+        self._vertices = None
+        self._edges = None
+        self._adjacency_matrix = None
+        self.vertices = vertices
+        self.edges = edges
+        self.adjacency_matrix = adjacency_matrix
+
+    @property
+    def vertices(self):
+        """
+        Vertices getter
+        :return: vertices
+        :rtype: set
+        """
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, vertices):
+        """
+        Vertices setter
+        :param vertices:
+        :type vertices: set
+        """
+        self._vertices = vertices
+
+    @property
+    def edges(self):
+        """
+        Edges getter
+        :return: edges
+        :rtype: set(tuple)
+        """
+        return self._edges
+
+    @edges.setter
+    def edges(self, edges):
+        """
+        Edges setter
+        :param edges:
+        :type edges: set(tuple)
+        """
+        self._edges = edges
+
+    @property
+    def adjacency_matrix(self):
+        """
+        Adjacency matrix getter
+        :return: adjacency_matrix
+        :rtype: list(list)
+        """
+        return self.adjacency_matrix
+
+    @adjacency_matrix.setter
+    def adjacency_matrix(self, matrix):
+        """
+        Adjacency matrix setter
+        :param matrix:
+        :type matrix: list(list)
+        """
+        self._adjacency_matrix = matrix
     
     def is_legal_graph(self, vertices, edges, adj):
-        #Check edges
+        # Check edges
         assert(vert!=vert2 for edge in edges for vert, vert2 in edge), \
             "Not a graph; \nEdges cannot have both endpoints be the same vertex"
-        #Check adjacency matrix
+        # Check adjacency matrix
         assert(adj[[vert,vert]]==0 for vert in vertices), \
             "Not a graph; \nEdges cannot have both endpoints be the same vertex"
         assert(adj[entry] in [0,1] for entry in adj.keys()), \
             "Not a graph; \nVertices can only have at most 1 edge between them"
             
     def is_edge(self, v1, v2):
-        """Returns true if v1,v2 is an edge"""
+        """
+        Returns true if v1,v2 is an edge
+        """
         assert v1 in self.vertices, "v1 is not an edge."
         assert v2 in self.vertices, "v2 is not an edge."
         if v1 == v2:
@@ -108,12 +148,12 @@ class Graph(digraph.Digraph):
         return True
     
     def add_vertex(self, vertex):
-        '''
+        """
         Adds a singular vertex to self.vertices and adds the vertex
         row and column to the adjacency matrix. 
         
         DOES NOT SET EDGES
-        '''
+        """
         vertices = self.get_vertices()
         #add it to vertices collection
         vertices.append(vertex)
@@ -127,11 +167,11 @@ class Graph(digraph.Digraph):
         
     
     def add_edge(self, edge):
-        '''
+        """
         Adds a singular edge to self.edges and self.adj
         Do not call this before the endpoints of the edge are known by
         the graph in self.vertices.
-        '''
+        """
         edges = self.get_edges()
         adj = self.get_adj()
         edges.append(edge)
@@ -143,7 +183,7 @@ class Graph(digraph.Digraph):
         self.is_legal_graph(self.get_vertices(), edges, adj)
         
     def add_edges(self, *edges):
-        '''Adds multiple edges with add_edge'''
+        """Adds multiple edges with add_edge"""
         adj = self.adj
         for e in edges:
             assert (vertex in self.vertices for vertex in e), \

@@ -5,9 +5,10 @@ Created on Apr 13, 2016
 """
 import math
 
-from . import graphlike
+from graph_theory.objects.graphlike import Graphlike
 
-class Digraph(graphlike.Graphlike):
+
+class Digraph(Graphlike):
     """
     Main properties:
         vertices The nodes of a digraph
@@ -16,41 +17,85 @@ class Digraph(graphlike.Graphlike):
                 and whose values are floats;
                 employs the dictionary representation of a matrix
     """
-
-
-    def __init__(self, verts=[], edges={}, ad_m={}):
+    def __init__(self, vertices=None, edges=None, adjacency_matrix=None):
         """
-        @param(verts) the nodes of a digraph,
-        @param(edges) the edges between vertices, a list of ordered pairs (list)
-            of vertices
-        @param(adj) the adjacency matrix; a dict whose keys are list-pairs of 
-            vertices and whose values are floats
+        :param vertices: the nodes of a digraph
+        :param edges: the edges between vertices, a list of ordered pairs (list) of vertices
+        :param adjacency_matrix: (optional) the adjacency matrix; a dict whose keys are 2-tuples of vertices and
+            whose values are floats
+        :type vertices: list
+        :type edges: list
+        :type adjacency_matrix: dict
         """
-        self.vertices=self.add_vertices(verts)
-        self.edges=self.add_edges(edges)
-        self.adj=ad_m
-        
-            
-    def get_vertices(self):
-        """vertices getter"""
-        return self.vertices
-    
-    def set_vertices(self, vertices):
-        """vertices setter"""
-        self.vertices=vertices
-        
-    property(get_vertices, set_vertices)
+
+        self._vertices = self.add_vertices(vertices)
+        self._edges = self.add_edges(edges)
+        self._adj = adjacency_matrix
+
+    @property
+    def vertices(self):
+        """
+        Vertices getter
+        :return: vertices
+        :rtype: set
+        """
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, vertices):
+        """
+        Vertices setter
+        :param vertices:
+        :type vertices: set
+        """
+        self._vertices = vertices
+
+    @property
+    def edges(self):
+        """
+        Edges getter
+        :return: edges
+        :rtype: set(tuple)
+        """
+        return self._edges
+
+    @edges.setter
+    def edges(self, edges):
+        """
+        Edges setter
+        :param edges:
+        :type edges: set(tuple)
+        """
+        self._edges = edges
+
+    @property
+    def adjacency_matrix(self):
+        """
+        Adjacency matrix getter
+        :return: adjacency_matrix
+        :rtype: list(list)
+        """
+        return self.adjacency_matrix
+
+    @adjacency_matrix.setter
+    def adjacency_matrix(self, matrix):
+        """
+        Adjacency matrix setter
+        :param matrix:
+        :type matrix: list(list)
+        """
+        self._adjacency_matrix = matrix
     
     def get_edges(self):
         """edges getter"""
         return self.edges
     
     def set_edges(self, edges):
-        """edges setter"""
-        self.edges=edges
-        
-    property(get_edges, set_edges)
-    
+        """
+        Wrapper for edges setter
+        """
+        self.edges = edges
+
     def set_adj(self, adj):
         """adj setter"""
         self.adj = adj

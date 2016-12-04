@@ -1,4 +1,4 @@
-'''
+"""
 Created on Apr 13, 2016
 
 This is a base class to understand graphs in the computational sense.
@@ -16,63 +16,65 @@ for the entirety of the graphlike objects included in this package:
 graph, digraph, multigraph, psuedograph, psuedo
 
 @author: unoriginalbanter
-'''
+"""
 from abc import ABCMeta, abstractmethod, abstractproperty
 
+
 class Graphlike(object):
-    '''
+    """
     abstract class, cannot instantiate it as a standalone instance
-    '''
+    """
     __metaclass__ = ABCMeta
     
     @abstractmethod
     def __init__(self):
-        '''
+        """
         Constructor
-        '''
-        self.vertices = None
-        self.edges = None
-        self.adj = None
-        
-    def set_vertices(self, vertices):
-        self.vertices = vertices
-        
-    def get_vertices(self):
-        return self.vertices
-    
-    def set_edges(self, edges):
-        self.edges = edges
-        
-    def get_edges(self):
-        return self.edges
+        """
+        self._vertices = None
+        self._edges = None
+        self._adjacency_matrix = None
 
-    def set_adj(self, adj_m):
-        self.adj = adj_m
-        
-    def get_adj(self):
-        return self.adj
-    
-    abstractproperty(get_vertices, set_vertices)
-    abstractproperty(get_edges, set_edges)
-    abstractproperty(get_adj, set_adj)
-    
-    @abstractmethod 
+    @property
+    @abstractproperty
+    def vertices(self):
+        return self._vertices
+
+    @vertices.setter
+    @abstractproperty
+    def vertices(self, vertices):
+        self._vertices = vertices
+
+    @property
+    @abstractproperty
+    def edges(self):
+        return self._edges
+
+    @edges.setter
+    @abstractproperty
+    def edges(self, edges):
+        self._edges = edges
+
+    @property
+    @abstractproperty
+    def adjacency_matrix(self):
+        return self._adjacency_matrix
+
+    @adjacency_matrix.setter
+    @abstractproperty
+    def adjacency_matrix(self, matrix):
+        self._adjacency_matrix = matrix
+
+    @abstractmethod
     def add_vertex(self, vertex):
-        '''Adds a vertex to the graphlike object's vertices and adj 
+        """Adds a vertex to the graphlike object's vertices and adjacency_matrix
         properties.
-        '''
+        """
         pass
     
     @abstractmethod 
     def add_edge(self, edge):
-        '''Adds an edge to the graphlike object's edges and adj properties.'''
-        pass
-    
-    @abstractmethod 
-    def is_legal(self):
-        '''Checks if the graphlike object is contextually legal for its type.
-        IE., strict graphs cannot have a weighted edge value other than 1 or 
-        0, while weighted_graphs can.'''
+        """Adds an edge to the graphlike object's edges and adjacency_matrix properties."""
         pass
     
     @abstractmethod

@@ -50,6 +50,15 @@ complete graph of order 3 by hard-code,
 
 >k3 = graphlike.complete_graph(3)
 
+In order to preserve mathematic authenticity, certain values are kept in particular data types. 
+This may seem odd, especially at first, however, there is a certain matter of value to it.
+For example, in each graphlike object's case, we have the object attributes vertices
+and edges. Rather than be stored in a list, we store them in a set object, which preserves
+the mathematic definitions of V(G) and E(G), which are both defined to be sets, and
+hence are unordered (unlike the more conventional Python list).
+
+If for some reason, there is an inaccuracy in the mapping from mathematics to the 
+implementation in this package, please contact the author to correct the issue.
 
 ## Version History
 ####0.0.1 
@@ -58,4 +67,4 @@ Package structure and object scopes defined. Abstract base class Graphlike devel
 Object methods template.
 ####0.0.3
 Restructure of subclasses of Graphlike and their attributes. Test cases. Formatting 
-corrections.
+corrections. Exceptions.
