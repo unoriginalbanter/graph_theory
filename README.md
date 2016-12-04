@@ -1,6 +1,7 @@
 # graph_theory
-Author: unoriginalbanter (V. Medina)
-Version 0.0.2-1a
+Author: Vincent 'unoriginalbanter' Medina
+
+Version 0.0.3
 
 ## Synopsis
 __NOTE: IF YOU WERE LOOKING FOR BAR GRAPHS OR LINE GRAPHS, THIS IS NOT THE
@@ -48,3 +49,13 @@ complete graph of order 3 by hard-code,
 >import graphlike_connectivity as graphlike
 
 >k3 = graphlike.complete_graph(3)
+
+
+## Version History
+####0.0.1 
+Package structure and object scopes defined. Abstract base class Graphlike developed.
+####0.0.2
+Object methods template.
+####0.0.3
+Restructure of subclasses of Graphlike and their attributes. Test cases. Formatting 
+corrections.

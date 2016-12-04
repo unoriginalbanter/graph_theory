@@ -11,7 +11,8 @@ Also, edges are in the form of a dictionary, with the key being the classic
 '''
 import math
 
-from objects import graphlike
+from graph_theory.objects import graphlike
+
 
 class WeightedDigraph(graphlike.Graphlike):
     '''
@@ -187,14 +188,17 @@ class WeightedDigraph(graphlike.Graphlike):
         """
         assert vertex in self.vertices, "Given vertex is not a member of the digraph."
         adj = self.get_adj()
+        #Track the distance here
         labels = {
             vert:math.inf 
             for vert in self.get_vertices()
         }
+        #Track a shortest path (NOTE: shortest path may not be unique)
         path = {
             vert:[]
             for vert in self.get_vertices()
         }
+        #Track the collection of vertices that hasn't been counted yet
         collection = self.get_vertices().remove(vertex)
         labels[vertex] = 0
         while collection:

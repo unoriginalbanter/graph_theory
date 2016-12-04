@@ -17,6 +17,8 @@ a graph is any digraph where for any edge in the graph, [v1, v2],
 we have [v2, v1] also an edge. We'll denote this in Python by having our
 edges each be sets instead of lists.
 '''
+import math
+
 from . import digraph
 
 class Graph(digraph.Digraph):
@@ -93,7 +95,17 @@ class Graph(digraph.Digraph):
             if self.is_edge(v1, vertex):
                 return self.edge_form(v1, vertex)
         return False
-        
+    
+    def is_connected(self):
+        """Returns True if graph is a connected graph, False else."""
+        vertex = self.get_vertices().pop()
+        distances = self.breadth_first(vertex)
+        for v in distances.keys():
+            if distances[v] == math.inf:
+                #if there is a single unreachable vertex, then not connected
+                return False
+        #Every vertex is reachable, so, connected
+        return True
     
     def add_vertex(self, vertex):
         '''
@@ -103,12 +115,13 @@ class Graph(digraph.Digraph):
         DOES NOT SET EDGES
         '''
         vertices = self.get_vertices()
+        #add it to vertices collection
         vertices.append(vertex)
         adj = self.get_adj()
+        #add the vertex to the adjacency matrix
         for vert in vertices:
             adj[[vert, vertex]]=None
             adj[[vertex, vert]]=None
-        vertices.append(vertex)
         self.set_vertices(vertices)
         self.set_adj(adj)
         
@@ -172,8 +185,10 @@ class Graph(digraph.Digraph):
     
     def breadth_first(self, vertex):
         """returns a dictionary whose keys are the vertices, and whose values
-        are the distances from vertex to each of these."""
-        distances = {vert:0 for vert in self.get_vertices()}
+        are the distances from vertex to each of these.
+        
+        output = {vertex: distance(input, vertex)}"""
+        distances = {vert:math.inf for vert in self.get_vertices()}
         i = 0
         adjacents = [vertex]
         counted = []

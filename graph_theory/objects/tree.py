@@ -1,24 +1,19 @@
 '''
-Created on Apr 13, 2016
+Created on Sep 18, 2016
 
-@author: unoriginalbanter
-
-Defines WeightedGraph class objects. 
-Note: edges is a bit redundant. Equivalently, adj.keys()
+@author: MyMac
 '''
-from objects import weighted_digraph
-class WeightedGraph(weighted_digraph.WeightedDigraph):
-    '''
-    Main properties:
-        - vertices <set> The nodes of a graph
-        - edges <list> The edges between vertices, a collection of unordered
-                        pairs, does not track weights.
-        - adj (Adjacency matrix), a dict whose keys are list-pairs of vertices
-                and whose values are float-type weights, or None if no edge is
-                present;
-                employs the dictionary representation of a matrix
-    '''
 
+from . import graph
+
+class Tree(graph.Graph):
+    '''
+    Strictly speaking, from a data-type perspective, Tree objects are identical
+    to Graph objects. However, from a mathematic perspective, Trees are a 
+    subclass of Graphs, having a special property. For this reason, Tree
+    objects are distinct from the general-case Graph object, and inherits 
+    from Graph.
+    '''
 
     def __init__(self, verts=[], edges=[], ad_m={}):
         '''
@@ -51,33 +46,20 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
     def get_adj(self):
         return self.adj
     
-    def edge_form(self, v1, v2, value=1.0):
-        """Returns the edge-form of v1,v2, irregardless if v1,v2 is an edge.
-        
-        Since weighted graphs require a weight, edge_form takes a value; if no
-        value is present, value defaults to 1.
-        
-        This is used for data-typing since the different graphlike objects use
-        different data types for edges based on their mathematic properties.
-        """
-        return {{v1,v2}:value}
-    
-    def is_legal_graph(self, vertices, edges, adj):
-        assert(list(edge.keys())[0]!=list(edge.keys())[1] for edge in edges), \
-            "Edges cannot have both endpoints be the same vertex"
-        assert(adj[set([vert,vert])]==0 for vert in vertices), \
-            "Edges cannot have both endpoints be the same vertex"
-        assert(adj[entry] in [0,1] for entry in adj.keys()), \
-            "Vertices can only have at most 1 edge between them"
-            
     def is_edge(self, v1, v2):
         """Returns true if v1,v2 is an edge"""
         assert v1 in self.vertices, "v1 is not an edge."
         assert v2 in self.vertices, "v2 is not an edge."
-        if self.edge_form(v1, v2) in self.edges:
+        if v1 == v2:
+            #Weighted graphs dont have self-adjacent vertices
+            return False
+        if self.edge_form(v1,v2) in self.edges():
+            #Yes
             return True
-        return False
-    
+        else:
+            #Else statement for readability, fuck speed its 2016
+            return False
+        
     def is_an_edge(self, v1, *vertices):
         """Returns False if there is no edge from v1 to any of the edges in
         vertices, and returns the first edge encountered in any other case."""
@@ -86,10 +68,21 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
                 return self.edge_form(v1, vertex)
         return False
     
+    def is_legal_tree(self, vertices, edges, adj):
+        """Checks for Graph legality."""
+        #Uses inherited method is_legal_graph from Graph
+        self.is_legal_graph(vertices,edges,adj)
+        assert self.is_connected(), "Trees must be connected graphs."
+        assert len(vertices) == len(vertices) - 1, \
+            "In a tree, we must have q=p-1\np = len(vertices)\nq=lend(edges)"
+        
+    
     def add_vertex(self, vertex):
         '''
         Adds a singular vertex to self.vertices and adds the vertex
-        row and column to the adjacency matrix
+        row and column to the adjacency matrix. 
+        
+        DOES NOT SET EDGES
         '''
         vertices = self.get_vertices()
         vertices.append(vertex)
@@ -102,22 +95,30 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
         self.set_adj(adj)
         
     
-    def add_edge(self, edge, weight):
+    def add_edge(self, edge):
         '''
-        Parameter:
-         - edge is a <set(v1, v2)>
-         - weight is your real number weight
         Adds a singular edge to self.edges and self.adj
         Do not call this before the endpoints of the edge are known by
         the graph in self.vertices.
         '''
         edges = self.get_edges()
         adj = self.get_adj()
-        vertices = self.get_vertices()
         edges.append(edge)
-        adj[edge[0], edge[1]] = weight
-        adj[edge[1], edge[0]] = weight
+        adj[edge[0], edge[1]] = 1
+        adj[edge[1], edge[0]] = 1
+        self.is_legal_graph(self.get_vertices(), edges, adj)
         self.set_edges(edges)
+        self.set_adj(adj)
+        self.is_legal_graph(self.get_vertices(), edges, adj)
+        
+    def add_edges(self, *edges):
+        '''Adds multiple edges with add_edge'''
+        adj = self.adj
+        for e in edges:
+            assert (vertex in self.vertices for vertex in e), \
+                "Edge has vertices that are not in the graph."
+            self.add_edge(e)
+            adj[e]=1
         self.set_adj(adj)
         
     def degree(self, vertex):
@@ -125,7 +126,7 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
         assert vertex in self.get_vertices(), "Vertex is not in the graph."
         degree = 0
         for other in self.get_vertices():
-            if self.is_edge(vertex,other):
+            if (vertex!=other) and (self.is_edge(vertex,other)):
                 degree = degree + 1
         return degree
     
@@ -143,7 +144,7 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
             if self.is_edge(vertex,other):
                 adjacents.append(other)
         return adjacents
-    
+        
     def other_vertices(self, *vertices):
         """Returns the collection of other vertices, distinct from vertex."""
         possible = self.get_vertices()
@@ -151,5 +152,21 @@ class WeightedGraph(weighted_digraph.WeightedDigraph):
             possible.remove(element)
         return possible
     
-
-    
+    def breadth_first(self, vertex):
+        """returns a dictionary whose keys are the vertices, and whose values
+        are the distances from vertex to each of these."""
+        distances = {vert:0 for vert in self.get_vertices()}
+        i = 0
+        adjacents = [vertex]
+        counted = []
+        distances = {}
+        while adjacents:
+            for vertex in adjacents:
+                distances[vertex] = i
+                counted.append(vertex) 
+            adjacents = [
+                other 
+                for other in self.other_vertices(*counted)
+                if self.is_an_edge(other, adjacents)
+             ]
+        return distances

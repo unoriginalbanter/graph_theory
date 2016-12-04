@@ -1,31 +1,31 @@
-'''
+"""
 Created on Apr 13, 2016
 
 @author: unoriginalbanter
-'''
+"""
 import math
 
 from . import graphlike
 
 class Digraph(graphlike.Graphlike):
-    '''
+    """
     Main properties:
         vertices The nodes of a digraph
         edges The edges between vertices, a list of ordered pairs <list>
         adj (Adjacency matrix), a dict whose keys are list-pairs of vertices
                 and whose values are floats;
                 employs the dictionary representation of a matrix
-    '''
+    """
 
 
     def __init__(self, verts=[], edges={}, ad_m={}):
-        '''
+        """
         @param(verts) the nodes of a digraph,
         @param(edges) the edges between vertices, a list of ordered pairs (list)
             of vertices
         @param(adj) the adjacency matrix; a dict whose keys are list-pairs of 
             vertices and whose values are floats
-        '''
+        """
         self.vertices=self.add_vertices(verts)
         self.edges=self.add_edges(edges)
         self.adj=ad_m
@@ -92,26 +92,27 @@ class Digraph(graphlike.Graphlike):
         return [v1,v2]
     
     def add_vertex(self, vertex):
-        '''
+        """
         Adds a singular vertex to self.vertices and adds the vertex
         row and column to the adjacency matrix
-        '''
+        """
         vertices = self.get_vertices()
         vertices.append(vertex)
+        #Add the vertex to the vertex collection
         adj = self.get_adj()
+        #Add the vertex row and column to the adjacency matrix
         for vert in vertices:
             adj[[vert, vertex]]=0
             adj[[vertex, vert]]=0
-        vertices.append(vertex)
         self.set_vertices(vertices)
         self.set_adj(adj)
         
     def add_edges(self, *es):
-        '''
+        """
         Adds a singular edge to self.edges and self.adj
         Do not call this before the endpoints of the edge are known by
         the graph in self.vertices.
-        '''
+        """
         edges = self.get_edges()
         adj = self.get_adj()
         for ed in es:
@@ -151,10 +152,10 @@ class Digraph(graphlike.Graphlike):
         Since they are equal, it does not matter which degree we are summing,
         but for sake of documentation, it is the in_degree
         """
-        sum = 0
+        sum_of_degrees = 0
         for vertex in self.get_vertices():
-            sum = sum + self.in_degree(vertex)
-        return vertex
+            sum_of_degrees += self.in_degree(vertex)
+        return sum_of_degrees
     
     def adjacent(self, vertex):
         """Returns a set of vertices that are adjacent to v."""
@@ -165,7 +166,7 @@ class Digraph(graphlike.Graphlike):
         return adjacents
     
     def other_vertices(self, *vertices):
-        """Returns the collection of other vertices, distinct from vertex."""
+        """Returns the collection of other vertices, distinct from the args vertices."""
         possible = self.get_vertices()
         for element in vertices:
             possible.remove(element)
