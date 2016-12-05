@@ -62,7 +62,7 @@ class Vertex(str):
         self.name = name
 
 
-class BaseEdge(frozenset):
+class BaseEdge(iter):
     """
     Defines a base edge object. Due to the pluarlity of edge formats, we cannot define concretely how this object will
     behave just yet in here.
@@ -76,7 +76,7 @@ class BaseEdge(frozenset):
         :param args:  Other values
         :param kwargs: Other keyword values
         """
-        super(BaseEdge).__init__(vertex_pair, *args, **kwargs)
+        self.vertices = vertex_pair
 
 
 class BaseWeightedEdge(BaseEdge):
@@ -111,65 +111,72 @@ class Graphlike(object):
         self._edges = None
         self._adjacency_matrix = None
 
+    @classmethod
     @abstractmethod
-    def is_legal(self):
+    def is_legal(cls, vertices, edges, adjacency_matrix):
         """
         Provides the basest checks for is_legal:
             Are self.vertices and self.edges collected in a set data type?
             Is each vertex a Vertex type?
             Is each edge derived from BaseEdge type?
             Is each vertex and edge represented in the adjacency matrix?
+        :param vertices:
+        :type vertices: set(Vertex)
+        :param edges:
+        :type edges: set(BaseEdge)
+        :param adjacency_matrix:
+        :type adjacency_matrix: dict
         :raises VertexError: when Vertices don't match definition
         :raises EdgeError: when edges don't match definition
         :raises MatrixError: when adjacency matrix doesn't match definition
         """
         # Are the vertices in a set?
-        if not self.vertices.isinstance(set):
+        if not vertices.isinstance(set):
             raise VertexError(
                 "VertexCollectionTypeError",
                 "Vertices are collected in a bad type. Expected: 'set', got: '{t}'".format(
-                    t=type(self.vertices)
+                    t=type(vertices)
                 )
             )
-            # Are the edges in a set?
-        if not self.edges.isinstance(set):
+        # Are the edges in a set?
+        if not edges.isinstance(set):
             raise EdgeError(
                 "EdgeCollectionTypeError",
                 "Edges are collected in a bad type. Expected: 'set', got: '{t}'".format(
-                    t=type(self.edges)
+                    t=type(edges)
                 )
             )
-            # Are the vertices each a 'Vertex'?
-        if any(not vertex.isinstance(Vertex) for vertex in self.vertices):
+        # Are the vertices each a 'Vertex'?
+        if any(not vertex.isinstance(Vertex) for vertex in vertices):
             raise VertexError(
                 "VertexTypeError",
                 "Vertices should each be an instance of type 'Vertex'"
             )
-            # Are the edges each an 'Edge'?
-        if any(not edge.isinstance(BaseEdge) for edge in self.edges):
+        # Are the edges each an 'Edge'?
+        if any(not edge.isinstance(BaseEdge) for edge in edges):
             raise EdgeError(
                 "EdgeTypeError",
                 "Each edge should be derived from 'BaseEdge'"
             )
-            # Is each vertex represented in both axes of the adjacency matrix?
-        for vertex in self.vertices:
-            if not all(frozenset([vertex, other]) in self.adjacency_matrix.keys() for other in self.vertices):
+        # Is each vertex represented in both axes of the adjacency matrix?
+        for vertex in vertices:
+            if not all(Graphlike.edge_form([vertex, other]) in adjacency_matrix.keys() for other in vertices):
                 raise MatrixError(
                     "MissingVertexError",
                     "Missing vertex {v} from the adjacency_matrix.".format(
                         v=vertex
                     )
                 )
-                # Is each row and column value in the adjacency matrix a Vertex?
-        for pair in self.adjacency_matrix.keys():
-            if any(index not in self.vertices for index in pair):
+        # Is each row and column value in the adjacency matrix a Vertex?
+        for pair in adjacency_matrix.keys():
+            if any(index not in vertices for index in pair):
                 raise MatrixError(
                     "NonVertexIndex",
                     "Index {i} contains a non-vertex value.".format(
                         i=pair
                     )
                 )
-            if self.adjacency_matrix[pair] and pair not in self.edges:
+            if adjacency_matrix[pair] and pair not in edges:
                 raise MatrixError(
                     "NonEdgeValue",
                     "Value at {i} has non-zero value despite no edge existing at this value.".format(
@@ -177,8 +184,8 @@ class Graphlike(object):
                     )
                 )
         # Is each edge represented in the adjacency matrix? Is each edge an Edge?
-        for edge in self.edges:
-            if not self.adjacency_matrix[edge]:
+        for edge in edges:
+            if not adjacency_matrix[edge]:
                 raise MatrixError(
                     "EdgeNotRepresented",
                     "Edge {e} not represented in the adjacency matrix".format(
@@ -230,53 +237,69 @@ class Graphlike(object):
         properties.
 
         """
-        pass
-    
-    @abstractmethod 
+        return None
+
+    @abstractmethod
     def add_edge(self, edge):
         """
         Adds an edge to the graphlike object's edges and adjacency_matrix properties.
         """
-        pass
-    
+        return None
+
     @abstractmethod
     def is_edge(self, v1, v2):
         """
         Returns true if v1, v2 is an edge.
         """
-        pass
-    
+        return bool(Graphlike.edge_form(v1, v2) in self.edges)
+
     @abstractmethod
-    def is_an_edge(self, v1, *vertices):
+    def has_an_edge_with(self, v1, *vertices):
         """
         Returns the first edge encountered from v1 to any of the vertices,
         but if not, returns False.
+
+        :param v1:
+        :type v1: Vertex
+        :param vertices:
         """
-        pass
-    
+        return bool(vertices)
+
     @abstractmethod
     def adjacent(self, vertex):
         """
         Returns a collection of vertices that are adjacent to vertex.
+        :param vertex:
+        :type vertex: Vertex
+        :returns: adjacent
+        :rtype: set(Vertex)
         """
-        pass
-    
+        return self.vertices
+
+    @classmethod
     @abstractmethod
-    def other_vertices(self, *vertices):
+    def other_vertices(cls, vertex, *vertices):
         """
         Returns the collection of other vertices, distinct from vertex.
+        :param vertex:
+        :param vertices:
+        :type vertex: Vertex
+        :type vertices: Vertex
+        :return other_vertices:
+        :rtype: set(Vertex)
         """
-        pass
+        return set(vertices).difference(vertex)
 
+    @classmethod
     @abstractmethod
-    def edge_form(self, vertex1, vertex2, *args):
+    def edge_form(cls, vertex1, vertex2, *args):
         """
         Returns the edge-format of v1, v2
         :param vertex1:
         :param vertex2:
         :param args:
         """
-        pass
+        return BaseEdge([vertex1, vertex2], *args)
 
 
 class WeightedGraphlike(Graphlike):
@@ -298,13 +321,21 @@ class WeightedGraphlike(Graphlike):
         self._edges = None
         self._adjacency_matrix = None
 
+    @classmethod
     @abstractmethod
-    def is_legal(self):
+    def is_legal(cls, vertices, edges, adjacency_matrix):
         """
         Provides the base checks for weighted graphlike object that aren't tested for in Graphlike.is_legal.
         Specifically, is each edge a weighted edge?
+        :param vertices:
+        :param edges:
+        :param adjacency_matrix:
+        :type vertices: set(Vertex)
+        :type edges: set(BaseWeightedEdge)
+        :type adjacency_matrix: dict
         """
-        if any(not edge.isinstance(BaseWeightedEdge) for edge in self.edges):
+        super(WeightedGraphlike).is_legal(vertices, edges, adjacency_matrix)
+        if any(not edge.isinstance(BaseWeightedEdge) for edge in edges):
             raise EdgeError(
                 "EdgeType",
                 "Non weighted edge found in edges."
@@ -347,50 +378,66 @@ class WeightedGraphlike(Graphlike):
         properties.
 
         """
-        pass
+        return None
 
     @abstractmethod
     def add_edge(self, edge):
         """
         Adds an edge to the graphlike object's edges and adjacency_matrix properties.
         """
-        pass
+        return None
 
     @abstractmethod
     def is_edge(self, v1, v2):
         """
         Returns true if v1, v2 is an edge.
         """
-        pass
+        return bool(WeightedGraphlike.edge_form(v1, v2) in self.edges)
 
     @abstractmethod
-    def is_an_edge(self, v1, *vertices):
+    def has_an_edge_with(self, v1, *vertices):
         """
         Returns the first edge encountered from v1 to any of the vertices,
         but if not, returns False.
+
+        :param v1:
+        :type v1: Vertex
+        :param vertices:
         """
-        pass
+        return bool(vertices)
 
     @abstractmethod
     def adjacent(self, vertex):
         """
         Returns a collection of vertices that are adjacent to vertex.
+        :param vertex:
+        :type vertex: Vertex
+        :returns: adjacent
+        :rtype: set(Vertex)
         """
-        pass
+        return self.vertices
 
+    @classmethod
     @abstractmethod
-    def other_vertices(self, *vertices):
+    def other_vertices(cls, vertex, *vertices):
         """
         Returns the collection of other vertices, distinct from vertex.
+        :param vertex:
+        :param vertices:
+        :type vertex: Vertex
+        :type vertices: Vertex
+        :return other_vertices:
+        :rtype: set(Vertex)
         """
-        pass
+        return set(vertices).difference(vertex)
 
+    @classmethod
     @abstractmethod
-    def edge_form(self, vertex1, vertex2, *args):
+    def edge_form(cls, vertex1, vertex2, *args):
         """
         Returns the edge-format of v1, v2
         :param vertex1:
         :param vertex2:
         :param args:
         """
-        pass
+        return BaseWeightedEdge([vertex1, vertex2], *args)

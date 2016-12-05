@@ -5,17 +5,30 @@ Created on Apr 13, 2016
 """
 import math
 
-from graph_theory.objects.graphlike import Graphlike
+from graph_theory.objects.graphlike import Graphlike, Vertex, BaseEdge
+from graph_theory.exceptions import VertexError, EdgeError, MatrixError
+
+
+class DirectedEdge(BaseEdge, tuple):
+    """
+    Defines a DirectedEdge object. Notably, the order that the vertices are named in the edge defines the edge as
+    distinct. Ie., DirectedEdge(v1, v2) != DirectedEdge(v2, v1)
+    """
+    def __init__(self, vertex_pair, *args, **kwargs):
+        """
+        :param vertex_pair: The pair of vertices that form the directed edge
+        :param args:
+        :param kwargs:
+        :type vertex_pair: list(Vertex)
+        """
+        super(DirectedEdge).__init__(vertex_pair, *args, **kwargs)
 
 
 class Digraph(Graphlike):
     """
-    Main properties:
-        vertices The nodes of a digraph
-        edges The edges between vertices, a list of ordered pairs <list>
-        adj (Adjacency matrix), a dict whose keys are list-pairs of vertices
-                and whose values are floats;
-                employs the dictionary representation of a matrix
+    :class_methods: is_legal_digraph
+    :properties: vertices, edges, adjacency_matrix
+    :methods: is_edge, has_an_edge_with
     """
     def __init__(self, vertices=None, edges=None, adjacency_matrix=None):
         """
@@ -23,21 +36,24 @@ class Digraph(Graphlike):
         :param edges: the edges between vertices, a list of ordered pairs (list) of vertices
         :param adjacency_matrix: (optional) the adjacency matrix; a dict whose keys are 2-tuples of vertices and
             whose values are floats
-        :type vertices: list
-        :type edges: list
+        :type vertices: set
+        :type edges: set
         :type adjacency_matrix: dict
         """
-
-        self._vertices = self.add_vertices(vertices)
-        self._edges = self.add_edges(edges)
-        self._adj = adjacency_matrix
+        super(Digraph).__init__(vertices, edges, adjacency_matrix)
+        self._vertices = None
+        self._edges = None
+        self._adjacency_matrix = None
+        self.vertices = set(vertices)
+        self.edges = set(edges)
+        self.adjacency_matrix = adjacency_matrix
 
     @property
     def vertices(self):
         """
         Vertices getter
         :return: vertices
-        :rtype: set
+        :rtype: set(Vertex)
         """
         return self._vertices
 
@@ -48,14 +64,17 @@ class Digraph(Graphlike):
         :param vertices:
         :type vertices: set
         """
-        self._vertices = vertices
+        self._vertices = set(
+            Vertex(v)
+            for v in vertices
+        )
 
     @property
     def edges(self):
         """
         Edges getter
         :return: edges
-        :rtype: set(tuple)
+        :rtype: set(DirectedEdge)
         """
         return self._edges
 
@@ -85,108 +104,164 @@ class Digraph(Graphlike):
         :type matrix: list(list)
         """
         self._adjacency_matrix = matrix
-    
-    def get_edges(self):
-        """edges getter"""
-        return self.edges
-    
-    def set_edges(self, edges):
-        """
-        Wrapper for edges setter
-        """
-        self.edges = edges
 
-    def set_adj(self, adj):
-        """adj setter"""
-        self.adj = adj
-        
-    def get_adj(self):
-        """adj getter"""
-        return self.adj
-    
-    def is_legal_digraph(self, vertices, edges, adj):
-        assert(edge[0]!=edge[1] for edge in edges), \
-            "Vertices cannot share and edge with themselves in a strict Digraph."
-        assert(adj[[vert,vert]]==0 for vert in vertices), \
-            "Vertices cannot share and edge with themselves in a strict Digraph."
-        assert(all(vertices[i]!=vertices[i+1] for i in range(len(vertices)-1))), \
-            "Only one vertex of a given name/index"
-            
+    @classmethod
+    def is_legal(cls, vertices, edges, matrix):
+        """
+        Does not overwrite Graphlike.is_legal()
+        :param vertices:
+        :param edges:
+        :param matrix:
+        :return:
+        """
+        super(Digraph).is_legal(vertices, edges, matrix)
+
+    @classmethod
+    def is_legal_digraph(cls, vertices, edges, matrix):
+        """
+        This method checks to see if the given combination of vertices, edges, and (adjacency) matrix is actually a
+        legal digraph by the mathematic definition.
+
+        A digraph is a graph whose edges are directional. That is (v1, v2) does not equal (v2, v1).
+
+        :param vertices: vertices to check
+        :param edges: edges to check
+        :param matrix: adjacency matrix to check
+        :return:
+        """
+        Digraph.is_legal(vertices, edges, matrix)
+        if any(not edge.isinstance(DirectedEdge) for edge in edges):
+            raise EdgeError(
+                "EdgeTypeError",
+                "Found an edge not of type DirectedEdge"
+            )
+        if any(matrix[Digraph.edge_form(vert, other)] != 0
+                for vert in vertices
+                for other in vertices.difference(vert)
+            ):
+            raise EdgeError(
+                "AutoAdjacent"
+                "Vertices cannot share and edge with themselves in a strict Digraph."
+            )
+
     def is_edge(self, v1, v2):
-        """Returns true if v1,v2 is an edge"""
-        assert v1 in self.vertices, "v1 is not an edge."
-        assert v2 in self.vertices, "v2 is not an edge."
+        """
+        Returns true if v1,v2 is an edge. v1 and v2 MUST be contained in self.vertices. If not, raises VertexError.
+
+        :param v1: The first vertex to check
+        :param v2: The second vertex to check
+        """
         if self.edge_form(v1, v2) in self.edges:
+            # We found the edge (v1, v2)
             return True
-        return False
+        else:
+            # First validate The vertices
+            if v1 not in self.vertices:
+                raise VertexError(
+                    "ValueNotFound",
+                    "Vertex {v} not found in the vertices of this graph: {vertices}".format(
+                        v=v1,
+                        vertices=self.vertices
+                    )
+                )
+            if v2 not in self.vertices:
+                raise VertexError(
+                    "ValueNotFound",
+                    "Vertex {v} not found in the vertices of this graph: {vertices}".format(
+                        v=v2,
+                        vertices=self.vertices
+                    )
+                )
+            # We did not find the edge, and they are indeed vertices
+            return False
     
-    def is_an_edge(self, v1, *vertices):
-        """Returns False if there is no edge from v1 to any of the edges in
-        vertices, and returns the first edge encountered in any other case."""
+    def has_an_edge_with(self, v1, *vertices):
+        """
+        Returns False if there is no edge from v1 to any of the edges in
+        vertices, and returns the first edge encountered in any other case.
+
+        :param v1: The vertex to find edges to/from
+        :param vertices: Collection of vertices to check if v1 has an edge to.
+        :type v1:
+        """
         for vertex in vertices:
             if self.is_edge(v1, vertex):
                 return self.edge_form(v1, vertex)
         return False
     
-    def edge_form(self, v1, v2, value):
+    @classmethod
+    def edge_form(cls, v1, v2, *args):
         """Returns the edge-form of v1,v2, irregardless if v1,v2 is an edge.
         
         This is used for data-typing since the different graphlike objects use
         different data types for edges based on their mathematic properties.
+        :param v1:
+        :param v2:
+        :type v1: Vertex
+        :type v2: Vertex
         """
-        return [v1,v2]
+        return DirectedEdge([v1, v2], *args)
     
     def add_vertex(self, vertex):
         """
         Adds a singular vertex to self.vertices and adds the vertex
         row and column to the adjacency matrix
+
+        :param vertex: Vertex object to add.
+        :type vertex: Vertex
         """
-        vertices = self.get_vertices()
-        vertices.append(vertex)
-        #Add the vertex to the vertex collection
-        adj = self.get_adj()
-        #Add the vertex row and column to the adjacency matrix
+        vertices = self.vertices.union(vertex)
+        # Add the vertex to the vertex collection
+        adj = self.adjacency_matrix
+        # Add the vertex row and column to the adjacency matrix
         for vert in vertices:
-            adj[[vert, vertex]]=0
-            adj[[vertex, vert]]=0
-        self.set_vertices(vertices)
-        self.set_adj(adj)
+            adj[Digraph.edge_form(vert, vertex)] = 0
+            adj[Digraph.edge_form(vertex, vert)] = 0
+        self.vertices = vertices
+        self.adjacency_matrix = adj
         
     def add_edges(self, *es):
         """
-        Adds a singular edge to self.edges and self.adj
+        Adds multiple edges to self.edges and self.adj
         Do not call this before the endpoints of the edge are known by
         the graph in self.vertices.
+        :arg es:
+        :type es: DirectedEdge
         """
-        edges = self.get_edges()
-        adj = self.get_adj()
-        for ed in es:
-            adj[ed] = 1 
-        edges.extend(es)
-        self.is_legal_graph(self.get_vertices(), edges, adj)
-        self.set_edges(edges)
-        self.set_adj(adj)
+        edges = self.edges()
+        adj = self.adjacency_matrix()
+        for edge in es:
+            adj[edge] = 1
+        edges = edges.union(es)
+        self.is_legal_digraph(self.vertices, edges, adj)
+        self.edges = edges
+        self.adjacency_matrix = adj
         
     def in_degree(self, vertex):
         """
-        Returns the indegree of the given vertext."""
-        assert vertex in self.get_vertices(), "Vertex must be in the graph."
+        Returns the indegree of the given vertex.
+        :param vertex:
+        :type vertex: Vertex
+        """
         degree = 0
-        #This is faster for large matrices with many edges, relatively slow otherwise
-        #but otherwise, computers are fast so NBD
-        for other_vert in self.get_vertices():
-            if [other_vert, vertex] in self.get_edges():
-                degree = degree + 1
+        # This is faster for large matrices with many edges, relatively slow but otherwise, computers are fast so NBD
+        for other_vert in self.vertices.difference(vertex):
+            if self.edge_form(other_vert, vertex) in self.edges:
+                degree += 1
         return degree
     
     def out_degree(self, vertex):
-        """Returns the outdegree of a given vertex"""
+        """
+        Returns the outdegree of a given vertex.
+        :param vertex:
+        :type vertex: Vertex
+        """
         degree = 0
-        #This is faster for large matrices with many edges, relatively slow otherwise
-        #but otherwise, computers are fast so NBD
-        for other_vert in self.get_vertices():
-            if [vertex, other_vert] in self.get_edges():
-                degree = degree + 1
+        # This is faster for large matrices with many edges, relatively slow otherwise
+        # but otherwise, computers are fast so NBD
+        for other_vert in self.vertices:
+            if self.edge_form(vertex, other_vert) in self.edges:
+                degree += 1
         return degree
     
     def sum_of_degrees(self):
@@ -196,25 +271,38 @@ class Digraph(Graphlike):
             
         Since they are equal, it does not matter which degree we are summing,
         but for sake of documentation, it is the in_degree
+        :return sum_of_degrees:
+        :rtype: int
         """
         sum_of_degrees = 0
-        for vertex in self.get_vertices():
+        for vertex in self.vertices:
             sum_of_degrees += self.in_degree(vertex)
         return sum_of_degrees
     
     def adjacent(self, vertex):
-        """Returns a set of vertices that are adjacent to v."""
-        adjacents = {}
-        for other in self.get_vertices():
-            if self.is_edge(vertex,other):
-                adjacents.append(other)
+        """
+        Returns a set of vertices that are adjacent to v.
+
+        :param vertex:
+        :type vertex: Vertex
+        :return: adjacents
+        :rtype: set(Vertex)
+        """
+        adjacents = set()
+        for other in self.vertices():
+            if self.is_edge(vertex, other):
+                adjacents.union(other)
         return adjacents
     
     def other_vertices(self, *vertices):
-        """Returns the collection of other vertices, distinct from the args vertices."""
-        possible = self.get_vertices()
+        """
+        Returns the collection of other vertices, distinct from the args vertices.
+        :arg vertices:
+        :type vertices: Vertex
+        """
+        possible = self.vertices
         for element in vertices:
-            possible.remove(element)
+            possible = possible.differnce(element)
         return possible
     
     def dijkstra_distance(self, vertex):
@@ -228,28 +316,33 @@ class Digraph(Graphlike):
                     distance:dist(input, vertex)
                 }
             }
+
+        :param vertex: A vertex
+        :type vertex: Vertex
+        :return distances:
+        :rtype: dict(dict)
         """
         assert vertex in self.vertices, "Given vertex is not a member of the digraph."
-        adj = self.get_adj()
+        adj = self.adjacency_matrix
         labels = {
-            vert:math.inf 
-            for vert in self.get_vertices()
+            vert: math.inf
+            for vert in self.vertices
         }
         path = {
-            vert:[]
-            for vert in self.get_vertices()
+            vert: []
+            for vert in self.vertices
         }
-        collection = self.get_vertices().remove(vertex)
+        collection = self.vertices.remove(vertex)
         labels[vertex] = 0
         while collection:
-            #While there are values to check for
+            # While there are values to check for
             for vert in collection:
-                #Select a lowest-labeled vertex
+                # Select a lowest-labeled vertex
                 if (labels[vert] <= labels[other] for other in collection):
                     vertex = vert
                     break
-            #Stop counting vertex
-            collection.remove(vertex)
+            # Stop counting vertex
+            collection.difference(vertex)
             edges = [
                 edge
                 for edge in self.edges
@@ -260,9 +353,9 @@ class Digraph(Graphlike):
                 if (w in collection) and (labels[w] > labels[vertex] + adj[edge]):
                     labels[w] = labels[vertex] + adj[edge]
                     path[w].append(vertex)
-        return {
-            vertex: {
-                'path':path[vertex],
-                'distance':labels[vertex]
+        distances = {}
+        for vertex in self.vertices:
+            distances[vertex] = {
+                'path': path[vertex],
+                'distance': labels[vertex]
             }
-        }
