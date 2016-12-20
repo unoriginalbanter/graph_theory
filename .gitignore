@@ -63,3 +63,6 @@ target/
 .idea/
 .project
 .pydevproject
+
+# Virtual environment
+venv/

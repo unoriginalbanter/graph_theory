@@ -11,8 +11,32 @@ Also, edges are in the form of a dictionary, with the key being the classic
 """
 import math
 
+
 from graph_theory.exceptions import *
 from graph_theory.objects import digraph
+from graph_theory.objects.graphlike import BaseWeightedEdge
+
+
+class WeightedDirectedEdge(BaseWeightedEdge, digraph.DirectedEdge):
+    """
+    :class: WeightedDirectedEdge
+        Defines a Weighted Directed Edge.
+        Since WeightedDirectedEdge objects inherit from both DirectedEdge and BaseWeightedEdge, we can immediately see
+        that the object has two important properties, vertex_pair and weight. The vertex_pair is an ordered 2-tuple
+
+       :attribute: vertex_pair
+       :attribute: weight
+    """
+    def __init__(self, vertex_pair, weight, *args, **kwargs):
+        """
+        :param vertex_pair:
+        :type vertex_pair: tuple
+        :param weight:
+        :type weight: numbers.Real
+        :param args:
+        :param kwargs:
+        """
+        super(WeightedDirectedEdge).__init__(vertex_pair, weight, *args, **kwargs)
 
 
 class WeightedDigraph(digraph.Digraph):
@@ -28,10 +52,13 @@ class WeightedDigraph(digraph.Digraph):
         """
         Constructor
 
-        :param vertices: List of vertices
+        :param vertices: Set of vertices
         :param edges: Set of tuple entries (vertex1, vertex2, weight)
         :param adjacency_matrix:
+        :type vertices: set(Vertex)
+        :type edges: set(Weighted
         """
+        super(WeightedDigraph).__init__(vertices, edges, adjacency_matrix)
         self._vertices = None
         self._edges = None
         self._adjacency_matrix = None
@@ -53,7 +80,7 @@ class WeightedDigraph(digraph.Digraph):
         """
         Vertices setter
         :param vertices:
-        :type vertices: set
+        :type vertices: set(Vertex)
         """
         self._vertices = vertices
 
@@ -62,7 +89,7 @@ class WeightedDigraph(digraph.Digraph):
         """
         Edges getter
         :return: edges
-        :rtype: set(tuple)
+        :rtype: set(WeightedDirectedEdge)
         """
         return self._edges
 
@@ -71,7 +98,7 @@ class WeightedDigraph(digraph.Digraph):
         """
         Edges setter
         :param edges:
-        :type edges: set(tuple)
+        :type edges: set(WeightedDirectedEdge)
         """
         self._edges = edges
 
@@ -80,7 +107,7 @@ class WeightedDigraph(digraph.Digraph):
         """
         Adjacency matrix getter
         :return: adjacency_matrix
-        :rtype: list(list)
+        :rtype: dict({WeightedDirectedEdge: numbers.Real})
         """
         return self.adjacency_matrix
 
@@ -89,42 +116,105 @@ class WeightedDigraph(digraph.Digraph):
         """
         Adjacency matrix setter
         :param matrix:
-        :type matrix: list(list)
+        :type matrix: dict({WeightedDirectedEdge: numbers.Real})
         """
         self._adjacency_matrix = matrix
     
-    def is_legal(self):
-        self.is_legal_graph()
-    
-    def is_legal_graph(self, vertices, edges, adj):
-        assert(edge[0]!=edge[1] for edge in edges), \
-            "Not a graph; \nEdges cannot have both endpoints be the same vertex"
-        assert(adj[[vert,vert]]==0 for vert in vertices), \
-            "Not a graph; \nEdges cannot have both endpoints be the same vertex"
-        assert(adj[entry] in [0,1] for entry in adj.keys()), \
-            "Not a graph; \nVertices can only have at most 1 edge between them"
-        assert(all(vertices[i]!=vertices[i+1] for i in range(len(vertices)-1))), \
-            "Not a graph; \nOnly one vertex of a given name/index"
-            
-    def edge_form(self, v1, v2, value):
-        """Returns the edge-form of v1,v2, irregardless if v1,v2 is an edge.
+    def is_legal(self, vertices, edges, adjacency_matrix):
+        """
+        Is a simple call to Graphlike.is_legal()
+        :param vertices:
+        :type vertices: set(Vertex)
+        :param edges:
+        :type edges: set(WeightedEdges)
+        :param adjacency_matrix:
+        :return:
+        """
+        super(WeightedDigraph).is_legal(vertices, edges, adjacency_matrix)
+        WeightedDigraph.is_legal_weighted_digraph(vertices, edges, adjacency_matrix)
+
+    @classmethod
+    def is_legal_weighted_digraph(cls, vertices, edges, matrix):
+        """
+        Checks that the given combination of vertices edges and (adjacency) matrix together meet the requirements
+        of being a legal weighted digraph. Does not currently have a check in place for vertices
+        :param vertices:
+        :param edges:
+        :param matrix:
+        :type vertices: set(Vertex)
+        :type edges: set(WeightedDirectedEdge)
+        :type matrix: dict({WeightedDirectedEdge: numbers.Real})
+        :return:
+        """
+        if all(edge.isinstance(WeightedDirectedEdge) for edge in edges):
+            pass
+        else:
+            raise EdgeError(
+                "TypeError",
+                "All edges in a weighted digraph must be both weighted and directional. Edges: {e}"
+            )
+        if any(matrix[key] != key.weight for key in matrix):
+            raise MatrixError(
+                "TypeError",
+                "All edge values must correspond to their weights."
+            )
+
+    @classmethod
+    def edge_form(cls, vertex1, vertex2, *args, **kwargs):
+        """
+        Returns the edge-form of v1,v2, irregardless if v1,v2 is an edge.
+
+        The first parameter in args should be weight.
         
         This is used for data-typing since the different graphlike objects use
         different data types for edges based on their mathematic properties.
+        :param vertex1:
+        :type vertex1: Vertex
+        :param vertex2:
+        :type vertex2: Vertex
+        :arg weight:
+        :type weight: numbers.Real
+        :return: edge_form
+        :rtype: WeightedDirectedEdge
         """
-        return {[v1,v2]:value}        
+        return WeightedDirectedEdge(tuple([vertex1, vertex2]), *args, **kwargs)
     
-    def is_edge(self, v1, v2):
-        """Returns true if v1,v2 is an edge"""
-        assert v1 in self.vertices, "v1 is not an edge."
-        assert v2 in self.vertices, "v2 is not an edge."
-        if self.edge_form(v1, v2) in self.edges:
-            return True
-        return False
+    def is_edge(self, v1, v2, *args, **kwargs):
+        """
+        Returns true if there exists some edge between v1 and v2. Can also return true if the optional argument
+        weight is provided.
+
+        :param v1:
+        :type v1: Vertex
+        :param v2:
+        :type v2: Vertex
+        :arg weight: (Optional) Returns True if there is an edge from v1 to v2 AND that edge has weight given.
+        """
+        if args:
+            # Checking everything
+            weight = args[0]
+            if self.edge_form(v1, v2, weight) in self.edges:
+                return True
+            else:
+                return False
+        else:
+            # Iterate through each edge to see if they share the same vertex_pair.
+            # Fake weight it dont matter
+            weight = [1]
+            if any(edge.vertex_pair == self.edge_form(v1, v2, weight).vertex_pair for edge in self.edges):
+                return True
+            else:
+                return False
     
-    def is_an_edge(self, v1, *vertices):
-        """Returns False if there is no edge from v1 to any of the edges in
-        vertices, and returns the first edge encountered in any other case."""
+    def has_an_edge_with(self, v1, *vertices):
+        """
+        Returns False if there is no edge from v1 to any of the edges in vertices, and returns the first edge
+        encountered in any other case.
+        :param v1:
+        :type v1: Vertex
+        :argument vertices:
+        :type vertices: *Vertex
+        """
         for vertex in vertices:
             if self.is_edge(v1, vertex):
                 return self.edge_form(v1, vertex)

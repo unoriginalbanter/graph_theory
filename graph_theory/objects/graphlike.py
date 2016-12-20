@@ -2,8 +2,8 @@
 Created on Apr 13, 2016
 
 This is a base class to understand graphs in the computational sense.
-It attempts to maintain the more abstract properties and "description" of 
-mathematical graphs as a collection of two objects (in this case, two 
+It attempts to maintain the more abstract properties and "description" of
+mathematical graphs as a collection of two objects (in this case, two
 mutable collections), one of vertices, and edges. A third representation
 implementing both is also used: adj -- the adjacency matrix, a dictionary
 whose keys are the [vertex1,vertex2] ordered pair, and whose entries vary
@@ -11,23 +11,27 @@ depending on the implementation of Graphlike, but defaults to 0 when
 no edge exists from vertex1 to vertex2.
 
 
-This abstract class is designed to provide an abstract base class (ABC) 
+This abstract class is designed to provide an abstract base class (ABC)
 for the entirety of the graphlike objects included in this package:
 graph, digraph, multigraph, psuedograph, psuedo
 
 @author: unoriginalbanter
 """
+import numbers
+from typing import Union, Sequence, Set, AnyStr, SupportsComplex, Dict, Any, Iterable, Optional, overload
+
+
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 from graph_theory.exceptions import VertexError, EdgeError, MatrixError
 
 
-class Vertex(str):
+class Vertex(AnyStr):
     """
     This defines a vertex object. Generally speaking, this object shouldn't be anything cast in an extraordinary
     type or fashion, as these serve simply as labels for an abstract object.
     """
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name: AnyStr, *args: Any, **kwargs: Any):
         """
         For the time being, a vertex is given almost exclusively by its name. Name should only have a type of str, int,
         or bytes (preferrably), or any object that is castable to str.
@@ -62,20 +66,21 @@ class Vertex(str):
         self.name = name
 
 
-class BaseEdge(iter):
+class BaseEdge(Iterable[Vertex]):
     """
     Defines a base edge object. Due to the pluarlity of edge formats, we cannot define concretely how this object will
     behave just yet in here.
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, vertex_pair, *args, **kwargs):
+    def __init__(self, vertex_pair: Sequence[Vertex], *args: Any, **kwargs: Any):
         """
 
         :param vertex_pair: The pair of vertices to convert to an edge
         :param args:  Other values
         :param kwargs: Other keyword values
         """
+        super(BaseEdge, self).__init__(vertex_pair)
         self.vertices = vertex_pair
 
 
@@ -85,15 +90,34 @@ class BaseWeightedEdge(BaseEdge):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, vertex_pair, weight, *args, **kwargs):
+    def __init__(self, vertex_pair: Sequence[Vertex], weight: SupportsComplex, *args: Any, **kwargs: Any):
         """
         :param vertex_pair:
         :param weight:
         :param args:
         :param kwargs:
         """
+        if not isinstance(weight, numbers.Real):
+            raise EdgeError(
+                "TypeError",
+                "All weighted edges must have a numeric.Real derived value. Got '{t}' instead.".format(
+                    t=type(weight)
+                )
+            )
         super(BaseWeightedEdge).__init__(vertex_pair, *args, **kwargs)
         self.weight = weight
+
+    def __repr__(self) -> str:
+        """
+        Define the represenation of WeightedDirectedEdge. This should be given to appear as if it were a dictionary,
+        so that the weights are clearly identified with the vertex pairs.
+        :return: repr
+        :rtype: str
+        """
+        return "{v}, {w}".format(v=self.vertex_pair, w=self.weight)
+
+
+Matrix = Dict[BaseEdge, numbers.Real]
 
 
 class Graphlike(object):
@@ -103,17 +127,21 @@ class Graphlike(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def __init__(self):
+    def __init__(self, vertices: Set[Vertex], edges: Set[BaseEdge], adjacency_matrix: Matrix):
         """
         Constructor
         """
         self._vertices = None
         self._edges = None
         self._adjacency_matrix = None
+        self.vertices = vertices
+        self.edges = edges
+        self.adjacency_matrix = adjacency_matrix
 
     @classmethod
     @abstractmethod
-    def is_legal(cls, vertices, edges, adjacency_matrix):
+    def is_legal(cls, vertices: Set[Vertex], edges: Set[BaseEdge], adjacency_matrix: Matrix) \
+            -> None:
         """
         Provides the basest checks for is_legal:
             Are self.vertices and self.edges collected in a set data type?
@@ -131,7 +159,7 @@ class Graphlike(object):
         :raises MatrixError: when adjacency matrix doesn't match definition
         """
         # Are the vertices in a set?
-        if not vertices.isinstance(set):
+        if not isinstance(vertices, set):
             raise VertexError(
                 "VertexCollectionTypeError",
                 "Vertices are collected in a bad type. Expected: 'set', got: '{t}'".format(
@@ -139,7 +167,7 @@ class Graphlike(object):
                 )
             )
         # Are the edges in a set?
-        if not edges.isinstance(set):
+        if not isinstance(edges, set):
             raise EdgeError(
                 "EdgeCollectionTypeError",
                 "Edges are collected in a bad type. Expected: 'set', got: '{t}'".format(
@@ -147,13 +175,13 @@ class Graphlike(object):
                 )
             )
         # Are the vertices each a 'Vertex'?
-        if any(not vertex.isinstance(Vertex) for vertex in vertices):
+        if any(not isinstance(vertex, Vertex) for vertex in vertices):
             raise VertexError(
                 "VertexTypeError",
                 "Vertices should each be an instance of type 'Vertex'"
             )
         # Are the edges each an 'Edge'?
-        if any(not edge.isinstance(BaseEdge) for edge in edges):
+        if any(not isinstance(edge, BaseEdge) for edge in edges):
             raise EdgeError(
                 "EdgeTypeError",
                 "Each edge should be derived from 'BaseEdge'"
@@ -192,7 +220,7 @@ class Graphlike(object):
                         e=edge
                     )
                 )
-            if not edge.isinstance(BaseEdge):
+            if not isinstance(edge, BaseEdge):
                 raise EdgeError(
                     "NotEdgeType",
                     "Edge {e} is not one of the edge types.".format(
@@ -202,59 +230,74 @@ class Graphlike(object):
 
     @property
     @abstractproperty
-    def vertices(self):
+    def vertices(self) \
+            -> Set[Vertex]:
         return self._vertices
 
     @vertices.setter
     @abstractproperty
-    def vertices(self, vertices):
+    def vertices(self, vertices: Set[Vertex]) \
+            -> None:
         self._vertices = vertices
 
     @property
     @abstractproperty
-    def edges(self):
+    def edges(self) \
+            -> Set[BaseEdge]:
         return self._edges
 
     @edges.setter
     @abstractproperty
-    def edges(self, edges):
+    def edges(self, edges: Set[BaseEdge]) \
+            -> None:
         self._edges = edges
 
     @property
     @abstractproperty
-    def adjacency_matrix(self):
+    def adjacency_matrix(self) \
+            -> Matrix:
         return self._adjacency_matrix
 
     @adjacency_matrix.setter
     @abstractproperty
-    def adjacency_matrix(self, matrix):
+    def adjacency_matrix(self, matrix: Matrix) \
+            -> None:
         self._adjacency_matrix = matrix
 
     @abstractmethod
-    def add_vertex(self, vertex):
+    def add_vertices(self, *vertices: Vertex) \
+            -> None:
         """
         Adds a vertex to the graphlike object's vertices and adjacency_matrix
         properties.
 
+        :param vertices: collection of vertices to add to Graphlike.vertices
+        :type vertices: Vertex
         """
         return None
 
     @abstractmethod
-    def add_edge(self, edge):
+    def add_edges(self, *edge: BaseEdge) \
+            -> None:
         """
         Adds an edge to the graphlike object's edges and adjacency_matrix properties.
         """
         return None
 
     @abstractmethod
-    def is_edge(self, v1, v2):
+    def is_edge(self, potential_edge: BaseEdge, *args: Any, **kwargs: Any) \
+            -> bool:
         """
-        Returns true if v1, v2 is an edge.
+        Returns true if potential_edge is an edge.
+        :param potential_edge:
+        :type potential_edge: BaseEdge
+        :returns: is_edge
+        :rtype: bool
         """
-        return bool(Graphlike.edge_form(v1, v2) in self.edges)
+        return bool(potential_edge in self.edges)
 
     @abstractmethod
-    def has_an_edge_with(self, v1, *vertices):
+    def has_an_edge_with(self, v1: Vertex, *vertices: Vertex) -> Optional[Vertex]:
         """
         Returns the first edge encountered from v1 to any of the vertices,
         but if not, returns False.
@@ -263,10 +306,10 @@ class Graphlike(object):
         :type v1: Vertex
         :param vertices:
         """
-        return bool(vertices)
+        return v1
 
     @abstractmethod
-    def adjacent(self, vertex):
+    def adjacent(self, vertex: Vertex) -> Set[Vertex]:
         """
         Returns a collection of vertices that are adjacent to vertex.
         :param vertex:
@@ -278,7 +321,7 @@ class Graphlike(object):
 
     @classmethod
     @abstractmethod
-    def other_vertices(cls, vertex, *vertices):
+    def other_vertices(cls, vertex: Vertex, *vertices: Vertex) -> Set[Vertex]:
         """
         Returns the collection of other vertices, distinct from vertex.
         :param vertex:
@@ -292,14 +335,14 @@ class Graphlike(object):
 
     @classmethod
     @abstractmethod
-    def edge_form(cls, vertex1, vertex2, *args):
+    def edge_form(cls, vertex1: Vertex, vertex2: Vertex, *args: Any, **kwargs: Any) -> BaseEdge:
         """
         Returns the edge-format of v1, v2
         :param vertex1:
         :param vertex2:
         :param args:
         """
-        return BaseEdge([vertex1, vertex2], *args)
+        return BaseEdge([vertex1, vertex2], *args, **kwargs)
 
 
 class WeightedGraphlike(Graphlike):
@@ -309,21 +352,22 @@ class WeightedGraphlike(Graphlike):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self):
+    def __init__(self, vertices: Set[Vertex], edges: Set[BaseWeightedEdge], adjacency_matrix: Matrix):
         """
         Constructor.
 
         This class of object differs from Graphlike with only one minor difference: the edge objects are instead
         WeightedEdge objects.
         """
-        super(WeightedGraphlike).__init__()
+        super(WeightedGraphlike).__init__(vertices, edges, adjacency_matrix)
         self._vertices = None
         self._edges = None
         self._adjacency_matrix = None
 
     @classmethod
     @abstractmethod
-    def is_legal(cls, vertices, edges, adjacency_matrix):
+    def is_legal(cls, vertices: Set[Vertex], edges: Set[BaseWeightedEdge], adjacency_matrix: Matrix) \
+            -> None:
         """
         Provides the base checks for weighted graphlike object that aren't tested for in Graphlike.is_legal.
         Specifically, is each edge a weighted edge?
@@ -335,7 +379,7 @@ class WeightedGraphlike(Graphlike):
         :type adjacency_matrix: dict
         """
         super(WeightedGraphlike).is_legal(vertices, edges, adjacency_matrix)
-        if any(not edge.isinstance(BaseWeightedEdge) for edge in edges):
+        if any(not isinstance(edge, BaseWeightedEdge) for edge in edges):
             raise EdgeError(
                 "EdgeType",
                 "Non weighted edge found in edges."
@@ -343,36 +387,43 @@ class WeightedGraphlike(Graphlike):
 
     @property
     @abstractproperty
-    def vertices(self):
+    def vertices(self) \
+            -> Set[Vertex]:
         return self._vertices
 
     @vertices.setter
     @abstractproperty
-    def vertices(self, vertices):
+    def vertices(self, vertices: Set[Vertex]) \
+            -> None:
         self._vertices = vertices
 
     @property
     @abstractproperty
-    def edges(self):
+    def edges(self) \
+            -> Set[BaseWeightedEdge]:
         return self._edges
 
     @edges.setter
     @abstractproperty
-    def edges(self, edges):
+    def edges(self, edges: BaseWeightedEdge) \
+            -> None:
         self._edges = edges
 
     @property
     @abstractproperty
-    def adjacency_matrix(self):
+    def adjacency_matrix(self) \
+            -> Matrix:
         return self._adjacency_matrix
 
     @adjacency_matrix.setter
     @abstractproperty
-    def adjacency_matrix(self, matrix):
+    def adjacency_matrix(self, matrix: Matrix) \
+            -> None:
         self._adjacency_matrix = matrix
 
     @abstractmethod
-    def add_vertex(self, vertex):
+    def add_vertices(self, *vertex: Vertex) \
+            -> None:
         """
         Adds a vertex to the graphlike object's vertices and adjacency_matrix
         properties.
@@ -381,21 +432,29 @@ class WeightedGraphlike(Graphlike):
         return None
 
     @abstractmethod
-    def add_edge(self, edge):
+    def add_edges(self, *edge: BaseWeightedEdge) \
+            -> None:
         """
-        Adds an edge to the graphlike object's edges and adjacency_matrix properties.
+        Adds the edges to the graphlike object's edges and adjacency_matrix properties.
         """
         return None
 
-    @abstractmethod
-    def is_edge(self, v1, v2):
+    @overload
+    def is_edge(self, potential_edge: BaseWeightedEdge, *args: Any, **kwargs: Any) \
+            -> bool:
         """
-        Returns true if v1, v2 is an edge.
+        Is meant to be be ovverridden
+        :param potential_edge:
+        :type potential_edge: BaseWeightedEdge
+        :param args:
+        :param kwargs:
+        :return:
         """
-        return bool(WeightedGraphlike.edge_form(v1, v2) in self.edges)
+        return bool(potential_edge in self.edges)
 
     @abstractmethod
-    def has_an_edge_with(self, v1, *vertices):
+    def has_an_edge_with(self, v1: Vertex, *vertices: Vertex) \
+            -> bool:
         """
         Returns the first edge encountered from v1 to any of the vertices,
         but if not, returns False.
@@ -407,7 +466,7 @@ class WeightedGraphlike(Graphlike):
         return bool(vertices)
 
     @abstractmethod
-    def adjacent(self, vertex):
+    def adjacent(self, vertex: Vertex) -> Set[Vertex]:
         """
         Returns a collection of vertices that are adjacent to vertex.
         :param vertex:
@@ -419,7 +478,7 @@ class WeightedGraphlike(Graphlike):
 
     @classmethod
     @abstractmethod
-    def other_vertices(cls, vertex, *vertices):
+    def other_vertices(cls, vertex: Vertex, *vertices: Vertex) -> Set[Vertex]:
         """
         Returns the collection of other vertices, distinct from vertex.
         :param vertex:
@@ -433,11 +492,11 @@ class WeightedGraphlike(Graphlike):
 
     @classmethod
     @abstractmethod
-    def edge_form(cls, vertex1, vertex2, *args):
+    def edge_form(cls, *params: Union[Iterable[Vertex], SupportsComplex], *args: Any, **kwargs: Any) -> BaseWeightedEdge:
         """
         Returns the edge-format of v1, v2
         :param vertex1:
         :param vertex2:
         :param args:
         """
-        return BaseWeightedEdge([vertex1, vertex2], *args)
+        return BaseWeightedEdge(*params, *args, **kwargs)
