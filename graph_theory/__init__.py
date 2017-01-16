@@ -3,7 +3,6 @@ Created on Sep 17, 2016
 
 @author: unoriginalbanter
 """
-import objects
 from graph_theory.objects.digraph import Digraph
 from graph_theory.objects.graph import Graph
 from graph_theory.objects.weighted_digraph import WeightedDigraph
@@ -16,3 +15,5 @@ __all__ = [
     "graphlike_connectivity",
     "stable_marriages",
     ]
+
+version = '0.0.3'
